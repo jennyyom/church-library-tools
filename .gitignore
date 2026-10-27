@@ -9,3 +9,11 @@ data/*
 __pycache__/
 .pytest_cache/
 .env
+
+# WireGuard VPN config (contains private key)
+*.conf
+
+# Firebird database files
+*.fdb
+*.FDB
+*.gdb
