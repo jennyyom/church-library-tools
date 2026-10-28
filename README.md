@@ -2,18 +2,34 @@
 
 Small tools that help volunteers run a church library.
 
-The library runs on an older Windows program backed by a Firebird database.
-These tools **do not change that program or its data**. They only read loan
-and book records and act on them.
+> **Status: In progress.** The overdue-reminder logic works and is tested against
+> made-up sample data. It is **not yet connected** to the library's real data.
+> The volunteer dashboard is planned.
 
-> **Status: In progress.** Overdue reminders work. The other features are being built.
+## Why This Project
+
+The library runs on **Handy Library**, a purchased Windows program backed by a
+Firebird database. We cannot change its code, and volunteers have run into a few
+problems with it:
+
+- **Overdue reminder emails show garbled Korean text** for recipients.
+- **Reminder emails currently fail to send.** Gmail rejects the program's login
+  (`535 5.7.8 Username and Password not accepted`), because Gmail no longer
+  accepts a regular account password from third-party programs.
+- **Loan information is hard to find.** Volunteers struggle to answer simple
+  questions like "who has this book?" or "which books are popular?"
+
+These tools work **alongside** Handy Library. They **only read** its data and never
+change the program or its database.
 
 ## Features
 
 | Feature | Status |
 |---|---|
-| Overdue book email reminders | Working. Fixing Korean text that appears garbled in emails |
-| Borrow count per book | Planned |
+| Overdue reminders: find overdue loans, one email per person | Logic done and tested on sample data |
+| Read loans directly from the Firebird database (read-only) | Planned. Practicing on a copy of the database |
+| Volunteer dashboard | Planned |
+| Borrow count per book, most borrowed books this month | Planned (shown on the dashboard) |
 | New-book alert: email the member who requested a book when it is purchased | Planned |
 
 ### Overdue book reminders
@@ -24,6 +40,25 @@ and book records and act on them.
 4. **Skip people reminded in the last 7 days** using a small local log (`notifier/sent_log.py`)
 5. **Preview or send** the emails (`notifier/mailer.py`)
 6. **List members with no email** so a librarian can contact them directly
+
+Emails are built with Python's `EmailMessage`, which encodes Korean text as UTF-8.
+
+`notifier/loans.py` is the only file that knows where the data comes from. It
+currently reads a CSV file. Switching to the database means adding one reader
+function there; the rest of the code and its tests stay the same.
+
+### Volunteer dashboard (planned)
+
+A simple local web page for volunteers, built with Streamlit:
+
+- Overdue loans, with an email preview and a confirm step before anything is sent
+- How many times each book has been borrowed
+- Most borrowed books this month
+- Members with no email on file, for direct contact
+
+Handy Library already shows some of this (for example, per-book borrow counts in
+its Circulation view), but volunteers did not know where to find it. The goal is
+to put what they need on one screen.
 
 ## How the Tools Reach the Library Data
 
@@ -46,7 +81,7 @@ pip install -r requirements.txt
 python main.py data/sample_loans.csv --today 2026-10-04
 
 # Send for real (needs email settings below)
-python main.py path/to/export.csv --send
+python main.py path/to/loans.csv --send
 ```
 
 ### Email settings (only needed with `--send`)
@@ -55,8 +90,8 @@ Set these as environment variables. Never put the password in the code.
 
 | Variable | Example |
 |---|---|
-| `SMTP_USER` | library@yourchurch.org |
-| `SMTP_PASSWORD` | Gmail App Password |
+| `SMTP_USER` | library@example.com |
+| `SMTP_PASSWORD` | Gmail App Password (requires 2-Step Verification) |
 | `SMTP_HOST` | smtp.gmail.com (default) |
 | `SMTP_PORT` | 587 (default) |
 
@@ -76,11 +111,6 @@ The tests cover the edge cases that matter most:
 - Nobody is reminded twice within 7 days, even after the program restarts
 - A row with a bad date is reported and skipped instead of crashing the run
 
-## Known Issues
-
-- **Korean text is garbled in sent reminder emails.** Investigating where the text
-  breaks: when reading from the database, or when building the email.
-
 ## Security and Privacy
 
 This project handles church members' personal information, so:
@@ -90,15 +120,18 @@ This project handles church members' personal information, so:
   These are listed in `.gitignore`.
 - **Passwords** are read from environment variables only.
 - `data/sample_loans.csv` contains **made-up names only**.
+- The dashboard will run **only on the library computer**, so member data does not
+  leave the church network.
 
 ## Roadmap
 
 - [x] Find overdue loans and build one email per person
 - [x] Dry-run preview by default
 - [x] Duplicate-send protection
-- [ ] Fix garbled Korean text in reminder emails
-- [ ] Read the library database directly (currently testing on a copy)
-- [ ] Show how many times each book has been borrowed
+- [ ] Document the database structure (tables and columns only, no member data)
+- [ ] Read loans directly from the database, read-only
+- [ ] Borrow count per book and most borrowed books this month
+- [ ] Volunteer dashboard (Streamlit)
 - [ ] Email the requester when a requested book is purchased
-- [ ] Run weekly with Windows Task Scheduler
+- [ ] Install on the library computer and collect volunteer feedback
 - [ ] (Optional) Text message reminders for members who opt in
