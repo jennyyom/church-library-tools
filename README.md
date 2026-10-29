@@ -72,6 +72,16 @@ The library computer is on the church's private network. During development:
 Connection details (VPN configuration, IP addresses, accounts) are not stored in
 this repository. See [Security and Privacy](#security-and-privacy).
 
+### Before switching to real data
+
+- [ ] Check how Handy Library runs Firebird. In server mode, we can read while the
+  program is open. In embedded mode, the program may lock the database file.
+- [ ] Get a **read-only** database account from the church IT team.
+- [ ] Add a database reader in `notifier/loans.py`. Keep connection settings in
+  environment variables, not in the code.
+- [ ] In `dashboard.py`, change `LOANS_PATH` (or the reader it uses) to the real data.
+- [ ] Make sure real data files stay in `data/` so `.gitignore` keeps them out of Git.
+
 ## Run It
 
 ```bash
